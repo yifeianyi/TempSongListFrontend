@@ -11,8 +11,20 @@ export default defineConfig(({ mode }) => {
   // 从环境变量中读取域名映射
   // 格式：域名=singer标识（支持点号）
   Object.keys(env).forEach(key => {
-    // 跳过 VITE_ 前缀的系统变量和 DEFAULT_ARTIST
-    if (key !== 'DEFAULT_ARTIST' && !key.startsWith('VITE_')) {
+    // 只包含包含点号的变量（域名格式：xxx.xxx.xxx）
+    // 排除 VITE_ 前缀、npm_ 前缀、NODE_ 前缀等系统变量
+    // 排除 DEFAULT_ARTIST
+    if (key !== 'DEFAULT_ARTIST' &&
+        !key.startsWith('VITE_') &&
+        !key.startsWith('npm_') &&
+        !key.startsWith('NODE_') &&
+        key.includes('.') &&
+        // 排除路径类型的变量（包含 /）
+        !key.includes('/') &&
+        // 排除常见的系统环境变量
+        !['PATH', 'HOME', 'USER', 'SHELL', 'PWD', 'LANG', 'TERM', 'EDITOR', 'DISPLAY',
+          'SSH_CONNECTION', 'SSH_CLIENT', 'SSH_TTY', 'XDG_', 'DBUS_', 'LESSOPEN', 'LESSCLOSE',
+          'LS_COLORS', 'LOGNAME', 'OLDPWD', 'SHLVL', 'TMUX', 'COLOR', '_', 'INIT_CWD'].some(prefix => key.startsWith(prefix))) {
       // key 就是域名，value 是歌手标识
       domainMappings[key] = env[key]
     }
