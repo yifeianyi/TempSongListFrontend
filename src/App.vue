@@ -154,9 +154,16 @@ export default {
       // 从环境变量或配置中获取映射
       let domainMappings = {}
       try {
-        domainMappings = import.meta.env.VITE_DOMAIN_MAPPINGS
-          ? JSON.parse(import.meta.env.VITE_DOMAIN_MAPPINGS)
-          : {}
+        const mappings = import.meta.env.VITE_DOMAIN_MAPPINGS
+        // 检查类型：如果是对象则直接使用，如果是字符串则解析
+        if (typeof mappings === 'object' && mappings !== null) {
+          domainMappings = mappings
+        } else if (typeof mappings === 'string') {
+          domainMappings = JSON.parse(mappings)
+        } else {
+          console.error('VITE_DOMAIN_MAPPINGS 类型无效:', typeof mappings)
+          domainMappings = {}
+        }
       } catch (e) {
         console.error('解析域名映射失败:', e)
         domainMappings = {}
