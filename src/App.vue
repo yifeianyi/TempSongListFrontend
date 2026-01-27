@@ -135,7 +135,25 @@ export default {
     HeadIcon
   },
   setup() {
-    // 根据域名获取 singer 标识
+    // 全局域名映射配置
+let globalDomainMappings = {}
+
+// 异步加载域名映射配置
+const loadDomainMappings = async () => {
+  try {
+    const response = await fetch('/domain-mappings.json')
+    if (response.ok) {
+      globalDomainMappings = await response.json()
+      console.log('域名映射已加载:', globalDomainMappings)
+    } else {
+      console.error('获取域名映射文件失败，HTTP状态:', response.status)
+    }
+  } catch (e) {
+    console.error('加载域名映射失败:', e)
+  }
+}
+
+// 根据域名获取 singer 标识
     const getArtistFromDomain = () => {
       // 优先检查 URL 参数中的 artist
       const urlParams = new URLSearchParams(window.location.search)
@@ -151,37 +169,20 @@ export default {
       // 完整域名（包括端口）
       const fullHostname = port ? `${hostname}:${port}` : hostname
 
-      // 从环境变量或配置中获取映射
-      let domainMappings = {}
-      try {
-        const mappings = import.meta.env.VITE_DOMAIN_MAPPINGS
-        // 检查类型：如果是对象则直接使用，如果是字符串则解析
-        if (typeof mappings === 'object' && mappings !== null) {
-          domainMappings = mappings
-        } else if (typeof mappings === 'string') {
-          domainMappings = JSON.parse(mappings)
-        } else {
-          console.error('VITE_DOMAIN_MAPPINGS 类型无效:', typeof mappings)
-          domainMappings = {}
-        }
-      } catch (e) {
-        console.error('解析域名映射失败:', e)
-        domainMappings = {}
-      }
-
+      // 使用全局域名映射
       console.log('当前域名:', fullHostname)
-      console.log('域名映射:', domainMappings)
+      console.log('域名映射:', globalDomainMappings)
 
       // 检查完整域名匹配
-      if (domainMappings[fullHostname]) {
-        console.log('使用完整域名匹配:', domainMappings[fullHostname])
-        return domainMappings[fullHostname]
+      if (globalDomainMappings[fullHostname]) {
+        console.log('使用完整域名匹配:', globalDomainMappings[fullHostname])
+        return globalDomainMappings[fullHostname]
       }
 
       // 检查仅主机名匹配
-      if (domainMappings[hostname]) {
-        console.log('使用主机名匹配:', domainMappings[hostname])
-        return domainMappings[hostname]
+      if (globalDomainMappings[hostname]) {
+        console.log('使用主机名匹配:', globalDomainMappings[hostname])
+        return globalDomainMappings[hostname]
       }
 
       // 使用默认值
@@ -503,9 +504,20 @@ export default {
       }
     })
 
-    onMounted(() => {
+    onMounted(async () => {
       // 初始化isMobile值
       isMobile.value = checkIsMobile()
+
+      // 首先加载域名映射配置
+      await loadDomainMappings()
+
+      // 重新获取当前 artist（因为域名映射可能已加载）
+      const initialArtist = getArtistFromDomain()
+      if (initialArtist !== currentArtist.value) {
+        currentArtist.value = initialArtist
+        siteTitle.value = `${initialArtist}歌单`
+        currentArtistName.value = initialArtist
+      }
 
       loadAllData()
 

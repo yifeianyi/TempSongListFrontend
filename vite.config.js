@@ -1,5 +1,7 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import fs from 'fs'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -30,6 +32,15 @@ export default defineConfig(({ mode }) => {
     }
   })
 
+  // 创建域名映射配置文件（构建时会生成到 public 目录）
+  const domainMappingsPath = path.resolve(process.cwd(), 'public/domain-mappings.json')
+  try {
+    fs.writeFileSync(domainMappingsPath, JSON.stringify(domainMappings, null, 2), 'utf-8')
+    console.log('✓ 域名映射配置文件已生成:', domainMappingsPath)
+  } catch (err) {
+    console.error('生成域名映射配置文件失败:', err)
+  }
+
   return {
     plugins: [vue()],
     server: {
@@ -50,10 +61,9 @@ export default defineConfig(({ mode }) => {
         },
       }
     },
-    // 将域名映射注入为环境变量，供前端代码使用
+    // 将默认歌手注入为环境变量
     envPrefix: ['VITE_'],
     define: {
-      'import.meta.env.VITE_DOMAIN_MAPPINGS': JSON.stringify(domainMappings),
       'import.meta.env.VITE_DEFAULT_ARTIST': JSON.stringify(env.DEFAULT_ARTIST || 'youyou'),
     }
   }
