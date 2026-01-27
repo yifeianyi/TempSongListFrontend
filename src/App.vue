@@ -123,7 +123,7 @@
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import HeadIcon from './components/HeadIcon.vue'
 
 export default {
@@ -390,11 +390,48 @@ export default {
           console.error('获取网站设置失败，HTTP状态:', response.status)
           // 设置默认图片
           headIconUrl.value = '/favicon.ico'
+          backgroundUrl.value = ''
         }
       } catch (error) {
         console.error('获取网站设置失败:', error)
         // 设置默认图片
         headIconUrl.value = '/favicon.ico'
+        backgroundUrl.value = ''
+      }
+    }
+
+    // 验证图片是否可加载，如果加载失败则使用默认图片
+    const verifyImage = (url, isBackground = false) => {
+      return new Promise((resolve) => {
+        if (!url || url === '/favicon.ico' || !url.startsWith('/media')) {
+          resolve(isBackground ? '' : '/favicon.ico')
+          return
+        }
+
+        const img = new Image()
+        img.onload = () => resolve(url)
+        img.onerror = () => {
+          console.warn('图片加载失败，使用默认图片:', url)
+          resolve(isBackground ? '' : '/favicon.ico')
+        }
+        img.src = url
+      })
+    }
+
+    // 加载并验证图片
+    const loadAndVerifyImages = async () => {
+      try {
+        const [verifiedHeadIcon, verifiedBackground] = await Promise.all([
+          verifyImage(headIconUrl.value, false),
+          verifyImage(backgroundUrl.value, true)
+        ])
+        headIconUrl.value = verifiedHeadIcon
+        backgroundUrl.value = verifiedBackground
+        console.log('图片验证完成，headIcon:', headIconUrl.value, 'background:', backgroundUrl.value)
+      } catch (error) {
+        console.error('图片验证失败:', error)
+        headIconUrl.value = '/favicon.ico'
+        backgroundUrl.value = ''
       }
     }
 
@@ -415,6 +452,8 @@ export default {
           fetchSiteSettings(),
           fetchArtistInfo()
         ])
+        // 验证图片是否可加载
+        await loadAndVerifyImages()
       } catch (err) {
         console.error('加载数据失败:', err)
         error.value = '加载数据失败，请刷新重试'
@@ -422,6 +461,16 @@ export default {
         loading.value = false
       }
     }
+
+    // 监听 currentArtist 变化，自动重新加载数据
+    watch(currentArtist, (newArtist, oldArtist) => {
+      console.log('currentArtist 变化:', oldArtist, '->', newArtist)
+      if (newArtist !== oldArtist) {
+        siteTitle.value = `${newArtist}歌单`
+        currentArtistName.value = newArtist
+        loadAllData()
+      }
+    })
 
     onMounted(() => {
       // 初始化isMobile值
@@ -433,6 +482,22 @@ export default {
       window.addEventListener('resize', () => {
         isMobile.value = checkIsMobile()
       })
+
+      // 监听 URL 变化（使用 hashchange 和 popstate）
+      const handleUrlChange = () => {
+        const newArtist = getArtistFromDomain()
+        console.log('检测到 URL 变化，新的 artist:', newArtist)
+        if (newArtist !== currentArtist.value) {
+          currentArtist.value = newArtist
+          siteTitle.value = `${newArtist}歌单`
+          currentArtistName.value = newArtist
+          console.log('重新加载数据，currentArtist 更新为:', currentArtist.value)
+          loadAllData()
+        }
+      }
+
+      window.addEventListener('popstate', handleUrlChange)
+      window.addEventListener('hashchange', handleUrlChange)
     })
 
     return {
