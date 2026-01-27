@@ -9,11 +9,12 @@ export default defineConfig(({ mode }) => {
   const domainMappings = {}
 
   // 从环境变量中读取域名映射
-  // 格式：youyou_example_com=youyou (域名中的点被替换为下划线)
+  // 格式：域名=singer标识（支持点号）
   Object.keys(env).forEach(key => {
-    if (key !== 'DEFAULT_ARTIST' && key.includes('_') && !key.startsWith('VITE_')) {
-      const domain = key.replace(/_/g, '.')
-      domainMappings[domain] = env[key]
+    // 跳过 VITE_ 前缀的系统变量和 DEFAULT_ARTIST
+    if (key !== 'DEFAULT_ARTIST' && !key.startsWith('VITE_')) {
+      // key 就是域名，value 是歌手标识
+      domainMappings[key] = env[key]
     }
   })
 
@@ -37,9 +38,11 @@ export default defineConfig(({ mode }) => {
         },
       }
     },
+    // 将域名映射注入为环境变量，供前端代码使用
+    envPrefix: ['VITE_'],
     define: {
-      __DOMAIN_MAPPINGS__: JSON.stringify(domainMappings),
-      __DEFAULT_ARTIST__: JSON.stringify(env.DEFAULT_ARTIST || 'youyou'),
+      'import.meta.env.VITE_DOMAIN_MAPPINGS': JSON.stringify(domainMappings),
+      'import.meta.env.VITE_DEFAULT_ARTIST': JSON.stringify(env.DEFAULT_ARTIST || 'youyou'),
     }
   }
 })

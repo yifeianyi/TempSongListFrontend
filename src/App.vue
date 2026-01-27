@@ -134,6 +134,14 @@ export default {
   setup() {
     // 根据域名获取 singer 标识
     const getArtistFromDomain = () => {
+      // 优先检查 URL 参数中的 artist
+      const urlParams = new URLSearchParams(window.location.search)
+      const artistFromUrl = urlParams.get('artist')
+      if (artistFromUrl) {
+        console.log('使用 URL 参数 artist:', artistFromUrl)
+        return artistFromUrl
+      }
+
       const hostname = window.location.hostname
       const port = window.location.port
 
@@ -141,32 +149,38 @@ export default {
       const fullHostname = port ? `${hostname}:${port}` : hostname
 
       // 从环境变量或配置中获取映射
-      const domainMappings = import.meta.env.VITE_DOMAIN_MAPPINGS
-        ? JSON.parse(import.meta.env.VITE_DOMAIN_MAPPINGS)
-        : {}
+      let domainMappings = {}
+      try {
+        domainMappings = import.meta.env.VITE_DOMAIN_MAPPINGS
+          ? JSON.parse(import.meta.env.VITE_DOMAIN_MAPPINGS)
+          : {}
+      } catch (e) {
+        console.error('解析域名映射失败:', e)
+        domainMappings = {}
+      }
+
+      console.log('当前域名:', fullHostname)
+      console.log('域名映射:', domainMappings)
 
       // 检查完整域名匹配
       if (domainMappings[fullHostname]) {
+        console.log('使用完整域名匹配:', domainMappings[fullHostname])
         return domainMappings[fullHostname]
       }
 
       // 检查仅主机名匹配
       if (domainMappings[hostname]) {
+        console.log('使用主机名匹配:', domainMappings[hostname])
         return domainMappings[hostname]
       }
 
-      // 检查 URL 参数中的 artist
-      const urlParams = new URLSearchParams(window.location.search)
-      const artistFromUrl = urlParams.get('artist')
-      if (artistFromUrl) {
-        return artistFromUrl
-      }
-
       // 使用默认值
-      return import.meta.env.VITE_DEFAULT_ARTIST || 'youyou'
+      console.log('使用默认值: youyou')
+      return 'youyou'
     }
 
     const currentArtist = ref(getArtistFromDomain())
+    console.log('初始化 currentArtist:', currentArtist.value)
     const siteTitle = ref(`${currentArtist.value}歌单`)
     const currentArtistName = ref(currentArtist.value) // 歌手中文名称
     const songs = ref([])
@@ -221,9 +235,12 @@ export default {
 
     const fetchSongs = async () => {
       try {
-        const response = await fetch(`${apiBasePath.value}/songs/?artist=${currentArtist.value}`)
+        const url = `${apiBasePath.value}/songs/?artist=${currentArtist.value}`
+        console.log('请求歌曲列表:', url)
+        const response = await fetch(url)
         if (response.ok) {
           const data = await response.json()
+          console.log('获取到歌曲数量:', data.length)
           songs.value = data
           filteredSongs.value = data
         } else {
