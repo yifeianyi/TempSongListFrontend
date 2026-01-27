@@ -1,6 +1,9 @@
 <template>
   <div id="app">
-    <div class="background" :style="{ backgroundImage: backgroundUrl ? `url(${backgroundUrl})` : 'none' }"></div>
+    <div class="background" :style="{ 
+      backgroundImage: backgroundUrl && backgroundUrl.startsWith('linear') ? backgroundUrl : (backgroundUrl ? `url(${backgroundUrl})` : 'none'),
+      backgroundSize: backgroundUrl && backgroundUrl.startsWith('linear') ? 'cover' : 'cover'
+    }"></div>
     <div class="content">
       <!-- 加载状态 -->
       <div v-if="loading" class="loading-container">
@@ -358,12 +361,16 @@ export default {
 
     const fetchSiteSettings = async () => {
       try {
-        const response = await fetch(`${apiBasePath.value}/site-settings/?artist=${currentArtist.value}`)
+        const url = `${apiBasePath.value}/site-settings/?artist=${currentArtist.value}`
+        console.log('请求网站设置 API:', url)
+        const response = await fetch(url)
+        console.log('网站设置 API 响应状态:', response.status)
+        
         if (response.ok) {
           const data = await response.json()
           console.log('网站设置数据:', data)
 
-          // 重置默认值
+          // 设置默认值
           headIconUrl.value = '/favicon.ico'
           backgroundUrl.value = ''
 
@@ -404,15 +411,23 @@ export default {
     const verifyImage = (url, isBackground = false) => {
       return new Promise((resolve) => {
         if (!url || url === '/favicon.ico' || !url.startsWith('/media')) {
-          resolve(isBackground ? '' : '/favicon.ico')
+          // 使用默认图片
+          console.log('使用默认图片，URL:', url)
+          // 背景图片失败时返回特殊标记，后续会使用渐变背景
+          resolve(isBackground ? 'USE_DEFAULT_BACKGROUND' : '/favicon.ico')
           return
         }
 
+        console.log('开始验证图片:', url)
         const img = new Image()
-        img.onload = () => resolve(url)
+        img.onload = () => {
+          console.log('图片加载成功:', url)
+          resolve(url)
+        }
         img.onerror = () => {
           console.warn('图片加载失败，使用默认图片:', url)
-          resolve(isBackground ? '' : '/favicon.ico')
+          // 背景图片失败时返回特殊标记
+          resolve(isBackground ? 'USE_DEFAULT_BACKGROUND' : '/favicon.ico')
         }
         img.src = url
       })
@@ -425,13 +440,22 @@ export default {
           verifyImage(headIconUrl.value, false),
           verifyImage(backgroundUrl.value, true)
         ])
+        
         headIconUrl.value = verifiedHeadIcon
-        backgroundUrl.value = verifiedBackground
+        
+        // 如果背景验证失败或使用默认，使用渐变背景
+        if (verifiedBackground === 'USE_DEFAULT_BACKGROUND' || !verifiedBackground) {
+          console.log('使用默认背景渐变')
+          backgroundUrl.value = 'linear-gradient(135deg, #8eb69b 0%, #f8b195 100%)'
+        } else {
+          backgroundUrl.value = verifiedBackground
+        }
+        
         console.log('图片验证完成，headIcon:', headIconUrl.value, 'background:', backgroundUrl.value)
       } catch (error) {
         console.error('图片验证失败:', error)
         headIconUrl.value = '/favicon.ico'
-        backgroundUrl.value = ''
+        backgroundUrl.value = 'linear-gradient(135deg, #8eb69b 0%, #f8b195 100%)'
       }
     }
 
