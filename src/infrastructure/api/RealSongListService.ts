@@ -54,12 +54,30 @@ export class RealSongListService implements ISongListService {
 
   async getLanguages(artist: string): Promise<string[]> {
     const response = await fetch(buildApiUrl('/languages/', { artist }))
-    return handleResponse<string[]>(response)
+    const languages = await handleResponse<string[]>(response)
+    return this.cleanAndDeduplicate(languages)
   }
 
   async getStyles(artist: string): Promise<string[]> {
     const response = await fetch(buildApiUrl('/styles/', { artist }))
-    return handleResponse<string[]>(response)
+    const styles = await handleResponse<string[]>(response)
+    return this.cleanAndDeduplicate(styles)
+  }
+
+  /**
+   * 清洗数据：去除空格、去重、排序
+   */
+  private cleanAndDeduplicate(items: string[]): string[] {
+    // 去除首尾空格，过滤空值
+    const cleaned = items
+      .map(item => item?.trim())
+      .filter(item => item && item.length > 0)
+    
+    // 去重（使用 Set）
+    const unique = [...new Set(cleaned)]
+    
+    // 按字母顺序排序
+    return unique.sort((a, b) => a.localeCompare(b, 'zh-CN'))
   }
 
   async getArtistInfo(artist: string): Promise<ArtistInfo> {
