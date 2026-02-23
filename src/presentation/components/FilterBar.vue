@@ -115,14 +115,26 @@ export default {
   setup(props, { emit }) {
     // 语言选择变化
     const handleLanguageChange = (value) => {
-      emit('update:selectedLanguage', value || '')
-      emit('filter')
+      const newValue = value || ''
+      emit('update:selectedLanguage', newValue)
+      // 将当前筛选值作为参数传递给 filter，避免异步更新问题
+      emit('filter', {
+        language: newValue,
+        style: props.selectedStyle,
+        search: props.searchText
+      })
     }
 
     // 曲风选择变化
     const handleStyleChange = (value) => {
-      emit('update:selectedStyle', value || '')
-      emit('filter')
+      const newValue = value || ''
+      emit('update:selectedStyle', newValue)
+      // 将当前筛选值作为参数传递给 filter，避免异步更新问题
+      emit('filter', {
+        language: props.selectedLanguage,
+        style: newValue,
+        search: props.searchText
+      })
     }
 
     // 搜索输入
@@ -132,13 +144,21 @@ export default {
 
     // 执行搜索
     const handleSearch = () => {
-      emit('filter')
+      emit('filter', {
+        language: props.selectedLanguage,
+        style: props.selectedStyle,
+        search: props.searchText
+      })
     }
 
     // 清空搜索
     const handleSearchClear = () => {
       emit('update:searchText', '')
-      emit('filter')
+      emit('filter', {
+        language: props.selectedLanguage,
+        style: props.selectedStyle,
+        search: ''
+      })
     }
 
     // 重置筛选

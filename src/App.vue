@@ -149,11 +149,12 @@ const loadAllData = async () => {
   }
 }
 
-const handleFilter = async () => {
+const handleFilter = async (filters) => {
+  // 如果传入了参数，使用传入的参数；否则使用当前状态
   await filterSongs(currentArtist.value, {
-    language: selectedLanguage.value,
-    style: selectedStyle.value,
-    search: searchText.value,
+    language: filters?.language ?? selectedLanguage.value,
+    style: filters?.style ?? selectedStyle.value,
+    search: filters?.search ?? searchText.value,
   })
 }
 
