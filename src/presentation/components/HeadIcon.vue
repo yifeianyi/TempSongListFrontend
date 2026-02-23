@@ -5,18 +5,26 @@
 </template>
 
 <script>
+import { createImageErrorHandler } from '../../shared/utils/image'
+
+/**
+ * 头像图标组件
+ * 展示歌手的头像图片
+ */
 export default {
   name: 'HeadIcon',
   props: {
     url: {
       type: String,
-      required: true
+      required: true,
+      description: '头像图片地址'
     }
   },
-  methods: {
-    handleError(event) {
-      // 如果图片加载失败，使用默认图片
-      event.target.src = '/favicon.ico'
+  setup() {
+    const handleError = createImageErrorHandler()
+
+    return {
+      handleError
     }
   }
 }
@@ -31,7 +39,7 @@ export default {
   border-radius: 50%;
   background-color: white;
   padding: 5px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: transform 0.3s ease;
   border: 2px solid #409EFF;
   margin: 0 auto;
@@ -46,5 +54,12 @@ export default {
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+}
+
+@media (max-width: 768px) {
+  .head-icon {
+    width: 180px;
+    height: 180px;
+  }
 }
 </style>
